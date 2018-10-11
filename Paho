@@ -1,0 +1,109 @@
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import javax.microedition.midlet.MIDlet;
+import javax.microedition.midlet.MIDletStateChangeException;
+
+import com.cinterion.io.InPortListener;
+import com.cwm.util.GPRSConnectOptions;
+import com.gemalto.pocketdemo.drivers.ConceptBoardButtonADriver;
+import com.gemalto.pocketdemo.drivers.ConceptBoardButtonBDriver;
+//import com.cinterion.io.ATCommand;
+import java.util.Random;
+//----------------
+
+public class Paho extends MIDlet {
+	
+	//----
+	private static final boolean DEBUG = false;
+	//---
+// private ATCommand atc;
+ private Random rand=new Random();
+ public Paho() {
+  // TODO Auto-generated constructor stub
+ }
+
+ protected void destroyApp(boolean arg0) throws MIDletStateChangeException {
+  System.out.println("Stopped");
+  notifyDestroyed();
+ }
+ protected void pauseApp() {
+  // TODO Auto-generated method stub
+	 System.out.println("pauseApp");
+ }
+
+ protected void startApp() throws MIDletStateChangeException {
+  int qos = 1;
+  String topic = "testtopic"; // see http://www.mqtt-dashboard.com/
+  String content = "Buna ziua, 11 octombrie 2018!";
+  String broker = "tcp://mqtt.beia-telemetrie.ro:1883";
+ int  n = rand.nextInt(99999999) + 1;
+  String clientId = Integer.toString(n);
+  MemoryPersistence persistence = new MemoryPersistence();
+  
+  System.out.println("Parameters for the SIM");
+  GPRSConnectOptions.getInstance().setBearerType("gprs");
+     GPRSConnectOptions.getInstance().setAPN("net");        // SIM card's APN     
+     GPRSConnectOptions.getInstance().setTimeout(60); 
+     System.out.println("[Buttons] start change listener");
+  try {
+	  
+	  Thread.sleep(1000);
+   
+	  System.out.println("Create the client MQTT ");
+  MqttClient sampleClient = new MqttClient(broker, clientId, persistence);
+   System.out.println("Create connexion ");
+  MqttConnectOptions connOpts = new MqttConnectOptions();
+  connOpts.setCleanSession(true);
+  System.out.println("[Paho]: Connecting to broker: " + broker);
+  sampleClient.connect(connOpts);
+  MqttMessage message = new MqttMessage(content.getBytes());
+  message.setRetained(true); // see it, even if we missed it
+  message.setQos(qos);
+  sampleClient.publish(topic, message);
+  System.out.println("Message sended");
+  sampleClient.disconnect();
+  System.out.println("Deconnected");
+  //------------------
+  ConceptBoardButtonADriver.addListener(new InPortListener() {
+		public void portValueChanged(int portValue) {
+			System.out.println("Button A state changed to: " + portValue);
+		}
+	});
+  ConceptBoardButtonBDriver.addListener(new InPortListener() {
+		public void portValueChanged(int portValue) {
+			System.out.println("Button B state changed to: " + portValue);
+		}
+	});
+  //
+  if (DEBUG) {
+		System.out.println("[FlameSensor] start reading loop");
+		Thread buttons_reader_loop = new Thread() {
+			public void run() {
+				while (true) {
+					System.out.println("Button A cuurent value: "
+							+ ConceptBoardButtonADriver.getState());
+					System.out.println("Button B cuurent value: "
+							+ ConceptBoardButtonBDriver.getState());
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		};
+
+		buttons_reader_loop.start();
+		System.out
+				.println("[Buttons] start reading loop: done");
+	}
+  } catch (Exception e) {
+   e.printStackTrace();
+  }
+   destroyApp(true);
+ }
+
+}
