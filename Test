@@ -1,0 +1,85 @@
+package com.gemalto.pocketdemo.tests;
+
+
+import javax.microedition.midlet.MIDlet;
+import javax.microedition.midlet.MIDletStateChangeException;
+
+import com.cinterion.io.InPortListener;
+import com.gemalto.pocketdemo.drivers.ConceptBoardButtonADriver;
+import com.gemalto.pocketdemo.drivers.ConceptBoardButtonBDriver;
+
+public class Test extends MIDlet {
+
+	private static final boolean DEBUG = false;
+
+	public Test() {
+		// TODO Auto-generated constructor stub
+	}
+
+	protected void destroyApp(boolean unconditional)
+			throws MIDletStateChangeException {
+
+		System.out.println("destroyApp");
+		notifyDestroyed();
+
+	}
+
+	protected void pauseApp() {
+		// TODO Auto-generated method stub
+		  // TODO Auto-generated method stub
+		 System.out.println("pauseApp");
+	}
+
+	protected void startApp() throws MIDletStateChangeException {
+		
+		
+		     
+		     
+		     
+		System.out.println("[Buttons] start change listener");
+
+		try {
+			
+			
+			ConceptBoardButtonADriver.addListener(new InPortListener() {
+
+				public void portValueChanged(int portValue) {
+					System.out.println("Button A state changed to: " + portValue);
+				}
+			});
+		ConceptBoardButtonBDriver.addListener(new InPortListener() {
+
+			public void portValueChanged(int portValue) {
+				System.out.println("Button B state changed to: " + portValue);
+			}
+		});
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		System.out.println("[Buttons] start change listener: done");
+
+		if (DEBUG) {
+			System.out.println("[FlameSensor] start reading loop");
+			Thread buttons_reader_loop = new Thread() {
+				public void run() {
+					while (true) {
+						System.out.println("Button A cuurent value: "
+								+ ConceptBoardButtonADriver.getState());
+						System.out.println("Button B cuurent value: "
+								+ ConceptBoardButtonBDriver.getState());
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			};
+
+			buttons_reader_loop.start();
+			System.out
+					.println("[Buttons] start reading loop: done");
+		}
+	}
+}
